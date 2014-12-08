@@ -1,0 +1,16 @@
+{
+    "contents" : "# --------------- Librairies\nlibrary(splines)\nlibrary(survival)\nlibrary(MASS)\nlibrary(PermGF)\nlibrary(doBy)\nlibrary(stringr)\nlibrary(reshape2)\nlibrary(tcltk)\nlibrary(openxlsx)\nlibrary(rmarkdown)\n# --------------- Initialisation\n# rm(list = ls()) # Efface tous les objets\ndir <- tclvalue(tkchooseDirectory(title=\"Choix du répertoire de travail\"))\nsetwd(dir)\ndirData <- tclvalue(tkchooseDirectory(title=\"Choix du répertoire contenant les données\"))\n########################## Import ##########################\npsdrf_Xls2Rdata()        # Reconstruction des Donnees brutes\npsdrf_Codes()            # Reconstruction des tables de codification\n########################## Premières sorties ###############\nload(\"Tables/psdrfDonneesBrutes.Rdata\")\nload(\"Tables/psdrfCodes.Rdata\")\npsdrf_Verif(2)           # Vérification classeur(s) avec psdrf_Verif.Rmd\npsdrf_ClasseurRem()      # Edition d'un classeur Excel facilitant la remesure\n# fiches de remesure : PsdrfFicheRem.Rnw\n# plan de localisation des arbres : psdrf_PlanArbres.Rnw()\n########################## Traitement ######################\nload(\"Tables/psdrfDonneesBrutes.Rdata\")\nload(\"Tables/psdrfCodes.Rdata\")\npsdrf_Calculs()\n# --------------- Aggregation par placettes\nload(\"Tables/psdrfTablesBrutes.Rdata\")\npsdrf_AgregArbres()\n# --------------- creation des tables foret, massif, ...\nload(\"Tables/psdrfTablesElaboreesPlac.RData\")\npsdrf_AgregPlacettes()\n########################## Sorties plus élaborées ######################\n# --------------- Shapes par placettes\nload(\"Tables/psdrfTablesElaboreesPlac.RData\")\npsdrf_ShapesPlac()\nload(\"Tables/PsdrfTablesElaborees.RData\")\npsdrf_Tables2Xls() # pas forcément nécessaire\n\n",
+    "created" : 1417000016393.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "139795293",
+    "id" : "4A2401C8",
+    "lastKnownWriteTime" : 1417003735,
+    "path" : "~/Desktop/Packages/GF/gf_Xls2Tables.R",
+    "project_path" : "gf_Xls2Tables.R",
+    "properties" : {
+    },
+    "source_on_save" : false,
+    "type" : "r_source"
+}
