@@ -11,17 +11,17 @@ library(openxlsx)
 library(rmarkdown)
 # --------------- Initialisation
 # rm(list = ls()) # Efface tous les objets
-dir <- tclvalue(tkchooseDirectory(title="Choix du répertoire de travail"))
-setwd(dir)
-dirData <- tclvalue(tkchooseDirectory(title="Choix du répertoire contenant les données"))
+rep <- tclvalue(tkchooseDirectory(title="Choix du répertoire de travail"))
+setwd(rep)
+file <- tclvalue(tkgetOpenFile(title="Choix du fichier contenant les données"))
 ########################## Import ##########################
-gf_Xls2Rdata(dirData)        # Reconstruction des Donnees brutes
+gf_Xls2Rdata(file)        # Reconstruction des Donnees brutes
 ########################## Premières sorties ###############
 load("Tables/gfDonneesBrutes.Rdata")
-# psdrf_Verif(2)           # Vérification classeur(s) avec psdrf_Verif.Rmd
-# psdrf_ClasseurRem()      # Edition d'un classeur Excel facilitant la remesure
-# fiches de remesure : PsdrfFicheRem.Rnw
-# plan de localisation des arbres : psdrf_PlanArbres.Rnw()
+gf_Verif(file, modif=F)           # Vérification classeur(s) avec gf_Verif.Rmd
+# gf_ClasseurRem()      # Edition d'un classeur Excel facilitant la remesure
+# fiches de remesure : gfFicheRem.Rnw
+# plan de localisation des arbres : gf_PlanArbres.Rnw()
 ########################## Traitement ######################
 load("Tables/gfDonneesBrutes.Rdata")
 gf_Calculs()

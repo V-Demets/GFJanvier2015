@@ -3,7 +3,7 @@
 \alias{gf_Xls2Rdata}
 \title{Conversion des données brutes de la base GF en 2 archives RData.}
 \usage{
-gf_Xls2Rdata(rep)
+gf_Xls2Rdata(file)
 }
 \arguments{
 \item{rep}{= répertoire contenant les données}

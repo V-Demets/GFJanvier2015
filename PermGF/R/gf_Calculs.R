@@ -39,6 +39,7 @@ gf_Calculs <- function(TauxR=0.03) {
   arbres <- arbres[order(arbres$NumForet,arbres$Cycle,arbres$NumPlac,arbres$Azimut),]
 
   ########### Calcul du poids ############
+    print("Calcul du poids")
   arbres$Poids <- NA
   # arbres$Poids <- 0
   # cas des perches sans mesure de distance
@@ -78,6 +79,8 @@ gf_Calculs <- function(TauxR=0.03) {
   rm(pos)
   ########### Donnees /ha ############
   arbres$Gha <- pi*arbres$Diam^2/40000 * arbres$Poids
+  # -------- Volume gestionnaire
+  print("Calcul du volume gestionnaire")
   arbres$Vha <- NA
   pos <- which(arbres$TypeTarif=="SchR")
   if (length(pos) > 0) {
@@ -96,7 +99,30 @@ gf_Calculs <- function(TauxR=0.03) {
     arbres$Vha[pos] <-  5/101250*(8+arbres$NumTarif[pos])*arbres$Diam[pos]^2*arbres$Poids[pos]}
 
   arbres$Vha[which(arbres$Vha<0)] <- 0
+  # ------ Calcul du volume IFN
+  print("Calcul du volume géométrique bois fort tige")
+  arbres$VhaIFN <- NA
+  pos <- which(arbres$TypeTarifIFN=="SchR")
+  if (length(pos) > 0) {
+    arbres$VhaIFN[pos] <-  5/70000*(8+arbres$NumTarifIFN[pos])*(arbres$Diam[pos]-5)*
+      (arbres$Diam[pos]-10)*arbres$Poids[pos]}
+  pos <- which(arbres$TypeTarifIFN=="SchI")
+  if (length(pos) > 0) {
+    arbres$VhaIFN[pos] <-  5/80000*(8+arbres$NumTarifIFN[pos])*(arbres$Diam[pos]-2.5)*
+      (arbres$Diam[pos]-7.5)*arbres$Poids[pos]}
+  pos <- which(arbres$TypeTarifIFN=="SchL")
+  if (length(pos) > 0) {
+    arbres$VhaIFN[pos] <-  5/90000*(8+arbres$NumTarifIFN[pos])*(arbres$Diam[pos]-5)*
+      arbres$Diam[pos]*arbres$Poids[pos]}
+  pos <- which(arbres$TypeTarifIFN=="SchTL")
+  if (length(pos) > 0) {
+    arbres$VhaIFN[pos] <-  5/101250*(8+arbres$NumTarifIFN[pos])*arbres$Diam[pos]^2*arbres$Poids[pos]}
+
+  arbres$VhaIFN[which(arbres$VhaIFN<0)] <- 0
+
   # ------ Valeur consommation
+  print("Calcul de la valeur de consommation")
+
   arbres$VcHa <- arbres$Vha*arbres$PU
   # ------ Volume de la classe supérieure
   arbres$DiamSup <- arbres$Diam + 5
@@ -124,6 +150,7 @@ gf_Calculs <- function(TauxR=0.03) {
   arbres$TauxV[pos] <- log(arbres$VhaSup[pos]/arbres$Vha[pos])/5
   rm(pos)
   # ------ Valeur potentielle
+  print("Calcul de la valeur potentielle")
   PrixSup <- Prix
   names(PrixSup)[4] <- "PUSup"
   arbres <- merge(arbres, PrixSup, by.x = c("Essence", "ClasseSup", "Reg1"),
@@ -170,6 +197,7 @@ gf_Calculs <- function(TauxR=0.03) {
 
 
   ########### taillis ################
+  print("Traitement du taillis")
   # ---- PCQM
   if (dim(PCQM)[1] > 0) {
     Taillis <- subset(PCQM, Population=="Taillis",
@@ -200,16 +228,18 @@ gf_Calculs <- function(TauxR=0.03) {
     Cercles <- merge(Cercles, Placettes[,c(1:9,11:12)], by=c("NumForet","NumPlac"), all.x=T, sort=F)
     Taillis <- merge(Cercles, Echantillonnages[,c("NumForet","Cycle","Strate","Taillis")],
                      by=c("NumForet","Strate","Cycle"), all.x=T, sort=F)
-    Taillis$Poids <- 10000/pi/Taillis$Taillis*Taillis$Nbre
+    Taillis$Poids <- 10000/pi/Taillis$Taillis/Taillis$Taillis
     Taillis$Gha <- pi/40000*Taillis$Diam^2 * Taillis$Poids
     Taillis$Vha <- Taillis$Gha * 7
     Taillis <- subset(Taillis, select=c("NumForet","NumPlac","Cycle","Essence","Diam","Poids","Gha","Vha"))
   }
 
   ########### Bois mort au sol ###########
+  print("Traitement des données de bois mort")
+
   # lineaire
   if (dim(BMSLineaires)[1] > 0) {
-    LongLig <- Echantillonnages$Linéaire[1]
+    LongLig <- Echantillonnages[1,21]
     BMSLineaires$Vha <- pi^2*BMSLineaires$Diam^2/8/LongLig/cos(BMSLineaires$Angle*pi/180)
   } else {
     BMSLineaires <- data.frame()
@@ -274,6 +304,8 @@ gf_Calculs <- function(TauxR=0.03) {
       }
 
   ####### Note ecologique ######
+  print("Traitement des données écologiques")
+
   Codes <- subset(arbres, NoteEcolo != "", c(NumForet,Strate,Cycle,NumPlac,NumArbre,Essence,Diam,NoteEcolo,Poids))
   # ---- Liste des niveaux
   if (dim(Codes)[1] > 0) {
@@ -300,7 +332,8 @@ gf_Calculs <- function(TauxR=0.03) {
                                     "IdArbre","Azimut","Dist","Observation",
                                     "Essence","Qual","Type","Reg1", "Reg2","Haut","Stade","Limite",
                                     "Diam1","Diam2","Diam","Classe","Cat","NoteEcolo","Vitalité","PU",
-                                    "Poids","Gha","Vha","VcHa","VpHa","Gain","AcctV","Taux","TauxPU","TauxV","AccD"))
+                                    "Poids","Gha","Vha","VhaIFN","VcHa","VpHa","Gain","AcctV","Taux",
+                                    "TauxPU","TauxV","AccD"))
   save(TauxR,arbres,Reges,Taillis,Reperes,BMSLineaires,BMSsup30,BMP,Codes,
        file="Tables/gfTablesBrutes.RData")
 }
