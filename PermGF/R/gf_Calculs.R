@@ -23,7 +23,7 @@ gf_Calculs <- function(TauxR=0.03) {
   arbres$Cat <- cut(arbres$Diam, breaks = c(0, 17.5, 27.5, 47.5, 67.5,200),
                     labels = c("PER", "PB", "BM", "GB","TGB"), include.lowest = T, right = F)
   #--------------- Corrections
-  pos <- which(arbres$Type=="M")
+  pos <- which(arbres$Type=="M")  # Notation bois mort fausse ??
   if (length(pos) > 0) {arbres$Qual <- "D"} # Valeurs par defaut : D pour arbres morts}
   pos <- which(arbres$Classe<7.5)
   if (length(pos) > 0) {arbres$PU <- 0}
@@ -39,39 +39,45 @@ gf_Calculs <- function(TauxR=0.03) {
   arbres <- arbres[order(arbres$NumForet,arbres$Cycle,arbres$NumPlac,arbres$Azimut),]
 
   ########### Calcul du poids ############
-    print("Calcul du poids")
+  print("Calcul du poids")
   arbres$Poids <- NA
   # arbres$Poids <- 0
   # cas des perches sans mesure de distance
   pos <- which(arbres$Cat=="PER" & is.na(arbres$Dist))
   if (length(pos) > 0) arbres[pos,"Poids"] <- 10000/pi/arbres$Rayon1[pos]^2
-#   # cas des perches avec mesure de distance
-#   pos <- which(arbres$Cat=="PER" & !is.na(arbres$Dist) & arbres$Dist > arbres$Rayon1 * arbres$CoeffPente)
-#   if (length(pos) > 0) arbres[pos,"Poids"] <- 0
+  #   # cas des perches avec mesure de distance
+  #   pos <- which(arbres$Cat=="PER" & !is.na(arbres$Dist) & arbres$Dist > arbres$Rayon1 * arbres$CoeffPente)
+  #   if (length(pos) > 0) arbres[pos,"Poids"] <- 0
 
   # ------------ Cercles uniques
   pos <- which(is.na(arbres$Poids) & is.na(arbres$DiamLim2) &
                  arbres$Diam >= arbres$DiamLim1 &
                  arbres$Dist <= arbres$Rayon1 * arbres$CoeffPente)
   if (length(pos) > 0) arbres[pos,"Poids"] <- 10000/pi/arbres$Rayon1[pos]^2
-#   # ------------ Cercles concentriques
-  pos <- which(is.na(arbres$Poids) & !is.na(arbres$DiamLim2) &
-                 arbres$Diam >= arbres$DiamLim1 & arbres$Diam <= arbres$DiamLim2 &
+  #   # ------------ Cercles concentriques
+  # 2 cercles : DiamLim1 et DiamLim2
+  pos <- which(is.na(arbres$Poids) & #pas besoin de !is.na(arbres$DiamLim2)
+                 arbres$Diam >= arbres$DiamLim1 & arbres$Diam < arbres$DiamLim2 &
                  arbres$Dist <= arbres$Rayon1 * arbres$CoeffPente)
   if (length(pos) > 0) arbres[pos,"Poids"] <- 10000/pi/arbres$Rayon1[pos]^2
   pos <- which(is.na(arbres$Poids) & is.na(arbres$DiamLim3) &
-                 arbres$Diam > arbres$DiamLim2 & arbres$Diam <= arbres$DiamLim3 &
+                 arbres$Diam >= arbres$DiamLim2 &
                  arbres$Dist <= arbres$Rayon2 * arbres$CoeffPente)
   if (length(pos) > 0) arbres[pos,"Poids"] <- 10000/pi/arbres$Rayon2[pos]^2
-  pos <- which(is.na(arbres$Poids) & !is.na(arbres$DiamLim3) &
-                 arbres$Diam > arbres$DiamLim3 &
+  # 3 cercles concentriques
+  pos <- which(is.na(arbres$Poids) & #pas besoin de !is.na(arbres$DiamLim3)
+                 arbres$Diam >= arbres$DiamLim2 & arbres$Diam < arbres$DiamLim3 &
+                 arbres$Dist <= arbres$Rayon2 * arbres$CoeffPente)
+  if (length(pos) > 0) arbres[pos,"Poids"] <- 10000/pi/arbres$Rayon2[pos]^2
+  pos <- which(is.na(arbres$Poids) & #pas besoin de !is.na(arbres$DiamLim3)
+                 arbres$Diam >= arbres$DiamLim3 &
                  arbres$Dist <= arbres$Rayon3 * arbres$CoeffPente)
   if (length(pos) > 0) arbres[pos,"Poids"] <- 10000/pi/arbres$Rayon3[pos]^2
   # ------------ Angle fixe
   pos <- which(arbres$Diam < arbres$DiamLim)
   if (length(pos) > 0) arbres[pos,"Coeff"] <- NA
-#   pos <- which(is.na(arbres$Poids) & arbres$Diam < arbres$DiamLim & arbres$Dist <= arbres$Rayon1 * arbres$CoeffPente)
-#   if (length(pos) > 0) arbres[pos,"Poids"] <- 10000/pi/arbres$Rayon1[pos]^2
+  #   pos <- which(is.na(arbres$Poids) & arbres$Diam < arbres$DiamLim & arbres$Dist <= arbres$Rayon1 * arbres$CoeffPente)
+  #   if (length(pos) > 0) arbres[pos,"Poids"] <- 10000/pi/arbres$Rayon1[pos]^2
   pos <- which(!is.na(arbres$Coeff) & arbres$Diam1 >= arbres$Dist * arbres$Coeff * 100)
   if (length(pos) > 0) arbres[pos,"Poids"] <- 10^8*arbres$Coeff[pos]^2/pi/arbres$Diam[pos]^2
   pos <- which(!is.na(arbres$Coeff) & arbres$Diam1 < arbres$Dist * arbres$Coeff * 100)
@@ -85,15 +91,15 @@ gf_Calculs <- function(TauxR=0.03) {
   pos <- which(arbres$TypeTarif=="SchR")
   if (length(pos) > 0) {
     arbres$Vha[pos] <-  5/70000*(8+arbres$NumTarif[pos])*(arbres$Diam[pos]-5)*
-                        (arbres$Diam[pos]-10)*arbres$Poids[pos]}
+      (arbres$Diam[pos]-10)*arbres$Poids[pos]}
   pos <- which(arbres$TypeTarif=="SchI")
   if (length(pos) > 0) {
     arbres$Vha[pos] <-  5/80000*(8+arbres$NumTarif[pos])*(arbres$Diam[pos]-2.5)*
-                        (arbres$Diam[pos]-7.5)*arbres$Poids[pos]}
+      (arbres$Diam[pos]-7.5)*arbres$Poids[pos]}
   pos <- which(arbres$TypeTarif=="SchL")
   if (length(pos) > 0) {
     arbres$Vha[pos] <-  5/90000*(8+arbres$NumTarif[pos])*(arbres$Diam[pos]-5)*
-                        arbres$Diam[pos]*arbres$Poids[pos]}
+      arbres$Diam[pos]*arbres$Poids[pos]}
   pos <- which(arbres$TypeTarif=="SchTL")
   if (length(pos) > 0) {
     arbres$Vha[pos] <-  5/101250*(8+arbres$NumTarif[pos])*arbres$Diam[pos]^2*arbres$Poids[pos]}
@@ -131,15 +137,15 @@ gf_Calculs <- function(TauxR=0.03) {
   pos <- which(arbres$TypeTarif=="SchR")
   if (length(pos) > 0) {
     arbres$VhaSup[pos] <- 5/70000*(8+arbres$NumTarif[pos])*(arbres$DiamSup[pos]-5)*
-                        (arbres$DiamSup[pos]-10)*arbres$Poids[pos]}
+      (arbres$DiamSup[pos]-10)*arbres$Poids[pos]}
   pos <- which(arbres$TypeTarif=="SchI")
   if (length(pos) > 0) {
     arbres$VhaSup[pos] <- 5/80000*(8+arbres$NumTarif[pos])*(arbres$DiamSup[pos]-2.5)*
-                        (arbres$DiamSup[pos]-7.5)*arbres$Poids[pos]}
+      (arbres$DiamSup[pos]-7.5)*arbres$Poids[pos]}
   pos <- which(arbres$TypeTarif=="SchL")
   if (length(pos) > 0) {
     arbres$VhaSup[pos] <- 5/90000*(8+arbres$NumTarif[pos])*(arbres$DiamSup[pos]-5)*
-                        arbres$DiamSup[pos]*arbres$Poids[pos]}
+      arbres$DiamSup[pos]*arbres$Poids[pos]}
   pos <- which(arbres$TypeTarif=="SchTL")
   if (length(pos) > 0) {
     arbres$VhaSup[pos] <- 5/101250*(8+arbres$NumTarif[pos])*arbres$DiamSup[pos]^2*arbres$Poids[pos]}
@@ -156,7 +162,7 @@ gf_Calculs <- function(TauxR=0.03) {
   arbres <- merge(arbres, PrixSup, by.x = c("Essence", "ClasseSup", "Reg1"),
                   by.y = c("Essence", "Classe", "Qual"), all.x = T)
   rm(PrixSup) # suppression de l'objet
-  arbres <- merge(arbres, AccD, by = c("NumForet", "Strate", "Essence","Classe"), all.x = T)
+  arbres <- merge(arbres, AccD, by = c("NumForet", "Strate", "Essence","Classe","Cycle"), all.x = T)
   pos <- which(arbres$Type=="M")
   if (length(pos)>0) {arbres[pos,"AccD"] <- 0}
   arbres$TauxPU  <- log(arbres$PUSup/arbres$PU)/5
@@ -168,29 +174,29 @@ gf_Calculs <- function(TauxR=0.03) {
   ########### Regeneration ################
   if (dim(Reges)[1] > 0) {
     Reges <- merge(Reges, Placettes[,1:9,12], by=c("NumForet","NumPlac"), all.x=T, sort=F)
-  Reges <- merge(Reges, Echantillonnages[,c("NumForet","Cycle","Strate","NbPlac","NbSousPlac","RayonSousPlac")],
-                 by=c("NumForet","Cycle","Strate"), all.x = T, sort=F)
-  Reges$EssValor <- 0
-  for (i in 1:dim(Forets)[1]) {
-    EssEnTour <- subset(EssInd, NumForet==Forets$NumForet[i], select="Essence")
-    pos <- which(Reges$NumForet==Forets$NumForet[i] & is.element(Reges$Essence, t(EssEnTour)))
-    Reges$EssValor[pos] <- 1
-  }
+    Reges <- merge(Reges, Echantillonnages[,c("NumForet","Cycle","Strate","NbPlac","NbSousPlac","RayonSousPlac")],
+                   by=c("NumForet","Cycle","Strate"), all.x = T, sort=F)
+    Reges$EssValor <- 0
+    for (i in 1:dim(Forets)[1]) {
+      EssEnTour <- subset(EssInd, NumForet==Forets$NumForet[i], select="Essence")
+      pos <- which(Reges$NumForet==Forets$NumForet[i] & is.element(Reges$Essence, t(EssEnTour)))
+      Reges$EssValor[pos] <- 1
+    }
 
-  Reges$Surf <- ifelse(Reges$Class1 + Reges$Class2+ Reges$Class3 >=5, 1, 0)
-  Reges$Surf <- Reges$Surf/Reges$NbPlac
-  SurfRege <- summaryBy(Surf + Surf*EssValor ~ NumForet+ Cycle + Ss.Plac+ Essence ,
-                        data=Reges, FUN= sum, na.rm=T, keep.names=T)
+    Reges$Surf <- ifelse(Reges$Class1 + Reges$Class2+ Reges$Class3 >=5, 1, 0)
+    Reges$Surf <- Reges$Surf/Reges$NbPlac
+    SurfRege <- summaryBy(Surf + Surf*EssValor ~ NumForet+ Cycle + Ss.Plac+ Essence ,
+                          data=Reges, FUN= sum, na.rm=T, keep.names=T)
 
-  # SurfRege1 <- data.frame(Pourc= c(sum(Reges$Surf)/Echantillonnages[1,12]/Echantillonnages[1,13],
-  #   															sum(Reges$Surf*Reges$EssValor)/Echantillonnages[1,12]/Echantillonnages[1,13]))
-  # ----- Donnees hectare
-  Reges$Classe1 <- Reges$Class1* 10000/pi/Reges$RayonSousPlac^2
-  Reges$Classe2 <- Reges$Class2* 10000/pi/Reges$RayonSousPlac^2
-  Reges$Classe3 <- Reges$Class3* 10000/pi/Reges$RayonSousPlac^2
-  Reges <- subset(Reges, select=c("NumForet","Strate","Cycle","NumPlac","Ss-Plac",
-                                  "Parcelle","Groupe","Typologie","Groupe1","Station",
-                                  "Essence","EssValor","Recouv","Classe1","Classe2","Classe3"))
+    # SurfRege1 <- data.frame(Pourc= c(sum(Reges$Surf)/Echantillonnages[1,12]/Echantillonnages[1,13],
+    #   															sum(Reges$Surf*Reges$EssValor)/Echantillonnages[1,12]/Echantillonnages[1,13]))
+    # ----- Donnees hectare
+    Reges$Classe1 <- Reges$Class1* 10000/pi/Reges$RayonSousPlac^2
+    Reges$Classe2 <- Reges$Class2* 10000/pi/Reges$RayonSousPlac^2
+    Reges$Classe3 <- Reges$Class3* 10000/pi/Reges$RayonSousPlac^2
+    Reges <- subset(Reges, select=c("NumForet","Strate","Cycle","NumPlac","Ss-Plac",
+                                    "Parcelle","Groupe","Typologie","Groupe1","Station",
+                                    "Essence","EssValor","Recouv","Classe1","Classe2","Classe3"))
   } else {
     Reges <- data.frame()
   }
@@ -201,7 +207,7 @@ gf_Calculs <- function(TauxR=0.03) {
   # ---- PCQM
   if (dim(PCQM)[1] > 0) {
     Taillis <- subset(PCQM, Population=="Taillis",
-                select=c("NumForet","NumPlac","Cycle","Quart","Essence","Azimut","Distance","Diam"))
+                      select=c("NumForet","NumPlac","Cycle","Quart","Essence","Azimut","Distance","Diam"))
     if (dim(Taillis)[1] >0) {
       Taillis <- merge(Taillis, Placettes[,c(1:4)], by=c("NumForet","NumPlac"), all.x=T, sort=F)
       Corr <- data.frame(Coeff=table(Taillis$NumPlac))
@@ -220,10 +226,10 @@ gf_Calculs <- function(TauxR=0.03) {
       Taillis$Vha <- Taillis$Gha * 7
       Taillis <- subset(Taillis, select=c("NumForet","NumPlac","Cycle","Essence","Diam","Poids","Gha","Vha"))
     } else {
-    Taillis <- data.frame()
+      Taillis <- data.frame()
     }
   }
-    # ---- Cercles
+  # ---- Cercles
   if (dim(Cercles)[1] > 0) {
     Cercles <- merge(Cercles, Placettes[,c(1:9,11:12)], by=c("NumForet","NumPlac"), all.x=T, sort=F)
     Taillis <- merge(Cercles, Echantillonnages[,c("NumForet","Cycle","Strate","Taillis")],
@@ -233,6 +239,11 @@ gf_Calculs <- function(TauxR=0.03) {
     Taillis$Vha <- Taillis$Gha * 7
     Taillis <- subset(Taillis, select=c("NumForet","NumPlac","Cycle","Essence","Diam","Poids","Gha","Vha"))
   }
+  if (dim(Cercles)[1] <= 0 & dim(PCQM)[1] <= 0) {Taillis <- data.frame()
+  } else {
+    if (dim(Taillis)[1] <= 0) {Taillis <- data.frame()}
+  }
+
 
   ########### Bois mort au sol ###########
   print("Traitement des données de bois mort")
