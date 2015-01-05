@@ -51,6 +51,24 @@ gf_Xls2Rdata <- function(file) {
   if (dim(t1)[1] >0) {t1[is.na(t1)] <- 0}
   Reges <- cbind(Reges[,1:5],t1,Reges$Observation)
   names(Reges)[12] <- "Observation"
+  #-----Remplissage de AccD si valeurs manquantes
+  pos <- which(is.na(AccD$AccD))
+  if (length(pos) >0) {
+    AccDTemp<- summaryBy(AccD ~ NumForet+Cycle+Essence+Strate, data=AccD, FUN=mean,
+                      keep.names=T,na.rm=T)
+    posTemp <- which(is.na(AccDTemp$AccD))
+    if (length(posTemp)>0) {
+      AccDTemp2 <- summaryBy(AccD ~ NumForet+Cycle+Strate, data=AccDTemp, FUN=mean,
+                         keep.names=T, na.rm=T) # Il vaut mieux se priver du critère ou cycle ?
+      AccDTemp$Id <- with(AccDTemp,paste0(NumForet,Cycle,Strate))
+      AccDTemp2$Id <- with(AccDTemp2,paste0(NumForet,Cycle,Strate))
+      AccDTemp$AccD[posTemp] <- AccDTemp2$AccD[match(AccDTemp$Id[posTemp],AccDTemp2$Id)]
+    }
+    AccD$Id <- with(AccD,paste0(NumForet,Essence,Strate))
+    AccDTemp$Id <- with(AccDTemp,paste0(NumForet,Essence,Strate)) # Rajouter Cycle ?
+    AccD$AccD[pos] <- AccDTemp$AccD[match(AccD$Id[pos],AccDTemp$Id)]
+  }
+  AccD$Id <- NULL
   # --------------- Sauvegarde
   rm(Tiges)
   setwd(repdatasav)
