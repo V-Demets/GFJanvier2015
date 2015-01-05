@@ -113,14 +113,26 @@ gfEcoEssReg <- gf_AgregMoySdEr(tab,"Foret",var.sup="EssReg")
 gfEcoEssRegDen <- gf_AgregMoySdEr(tab,"Foret",var.sup="EssReg")
 
 # --------- Taillis -------
-gfTaillis <- gf_AgregMoySdEr(gfTaillisPla,"Foret", ncol=3)
-gfTaillisEss <- gf_AgregMoySdEr(gfTaillisPlaEss,"Foret",var.sup="Essence",ncol=3)
-gfTaillisEssReg <- gf_AgregMoySdEr(gfTaillisPlaEssReg,"Foret",var.sup="EssReg",ncol=3)
+if (dim(gfTaillisPla)[1] > 0) {
+  gfTaillis <- gf_AgregMoySdEr(gfTaillisPla,"Foret", ncol=3)
+  gfTaillisEss <- gf_AgregMoySdEr(gfTaillisPlaEss,"Foret",var.sup="Essence",ncol=3)
+  gfTaillisEssReg <- gf_AgregMoySdEr(gfTaillisPlaEssReg,"Foret",var.sup="EssReg",ncol=3)
+} else {
+  gfTaillisEssReg <- data.frame()
+  gfTaillisEss    <- data.frame()
+  gfTaillis       <- data.frame()
+}
 
 # --------- Regeneration -------
+if (dim(gfRegePla)[1] > 0) {
 gfRege <- gf_AgregMoySdEr(gfRegePla,"Foret",ncol=4)
 gfRegeEss <- gf_AgregMoySdEr(gfRegePlaEss[,c(1:9)],"Foret",var.sup="Essence",ncol=4)
 gfRegeEssReg <- gf_AgregMoySdEr(gfRegePlaEssReg,"Foret",var.sup="EssReg",ncol=4)
+} else {
+  gfRegeEssReg <- data.frame()
+  gfRegeEss    <- data.frame()
+  gfRege       <- data.frame()
+}
 
 # --------- Histogrammes Catégories, Qualités -------
 gfDendroCat <- gf_AgregMoySdEr(gfPlaCatDen[,c(1:9,13)],"Foret",var.sup="Cat")
